@@ -149,6 +149,30 @@ Record preferred current terminology and terms that may require clarification.
 |---|---|
 | | |
 
+## Approved Public Facts
+
+Record important company facts that the product owner has explicitly approved
+for use by the assistant.
+
+These facts may be treated as application knowledge without requiring the
+assistant to rediscover them through web search on every request.
+
+| Fact ID | Approved public fact | Provenance | Limits / qualifications |
+|---|---|---|---|
+| | | | |
+
+Approved application knowledge must not be expanded through inference.
+
+A narrowly approved fact does not authorize disclosure of related protected
+information.
+
+For example, approval to state a company's ownership structure does not
+automatically authorize disclosure of ownership percentages, valuations,
+financial arrangements, or other related private information.
+
+When an approved fact becomes outdated or is superseded, update its status and
+the evaluations that depend on it.
+
 ## Renamed products
 
 | Previous name | Current name | Effective period / notes |
@@ -179,6 +203,42 @@ relationship to its products, technologies, or customer workflows.
 Questions unrelated to the assistant's mission.
 
 [TO BE DEFINED]
+
+## Policy Dimensions and Routing Precedence
+
+Topical scope is only one policy dimension.
+
+Identify other dimensions that may be evaluated independently, such as:
+
+- private-information handling;
+- disclosure;
+- lifecycle;
+- assistance complexity;
+- retrieval requirements.
+
+Do not use IN_SCOPE / AMBIGUOUS / OUT_OF_SCOPE as substitutes for these
+independent decisions.
+
+Define the project's routing and precedence rules.
+
+| Condition / policy decision | Precedence | Resulting behavior |
+|---|---:|---|
+| | | |
+
+Document important mixed cases.
+
+Examples:
+
+- private request that is otherwise in scope;
+- out-of-scope question eligible for bounded technical assistance;
+- current product question containing a historical reference;
+- public question that also requests protected implementation details;
+- substantial task that should be narrowed rather than refused.
+
+When one policy intercepts another, record that explicitly.
+
+The answer-generation model should not silently reconsider routing decisions
+that the application has already made authoritative.
 
 ## Ambiguous-question behavior
 
@@ -280,6 +340,21 @@ Distinguish where appropriate between:
 
 [TO BE DEFINED]
 
+## Public Exceptions Within Protected Categories
+
+A protected category may contain narrowly approved public facts.
+
+Record these exceptions explicitly.
+
+| Protected category | Approved public exception | Provenance | What remains protected |
+|---|---|---|---|
+| | | | |
+
+An exception must be interpreted narrowly.
+
+Approval to disclose one fact must not be treated as authorization to infer,
+estimate, confirm, deny, or disclose adjacent protected facts.
+
 ---
 
 # 6. Privacy Handling Rules
@@ -324,6 +399,55 @@ Prefer a positive definition of what the technology is.
 
 Do not automatically volunteer assertions about implementation details or what
 the technology is not.
+
+## Disclosure Decision States
+
+For implementation-related subjects, explicitly choose the company's public
+position.
+
+Possible decisions include:
+
+- PUBLIC — may be stated directly;
+- PROTECTED — should not be disclosed;
+- CONDITIONAL — may be disclosed under defined circumstances;
+- MAKE NO ASSERTION — the assistant should neither confirm nor deny the
+  proposed characterization unless separately authorized.
+
+"MAKE NO ASSERTION" is useful when the company does not want the assistant to
+adopt either side of a user's proposed characterization.
+
+Examples may include questions about:
+
+- proprietary model development;
+- model customization;
+- fine-tuning;
+- training;
+- underlying architecture;
+- provider relationships.
+
+Do not convert MAKE NO ASSERTION into a factual denial.
+
+## Disclosure Decision States and Disclosure Response Mode
+
+For each important disclosure category, determine the response mechanism.
+
+| Disclosure category | Decision state | Response mode | Approved public substance |
+|---|---|---|---|
+| | | | |
+
+Possible response modes:
+
+- DETERMINISTIC — return approved wording/substance without open-ended answer
+  generation;
+- GENERATED — allow ordinary answer generation under the approved policy;
+- CONSTRAINED GENERATED — generate an answer using explicitly approved public
+  facts and restrictions.
+
+Use deterministic responses where generated variation creates unnecessary
+risk of confirming, denying, or introducing protected assertions.
+
+Semantic classification is still required and must be evaluated even when the
+resulting response is deterministic.
 
 ## AI provider
 
@@ -395,9 +519,60 @@ Possible source classes include:
 - third-party publications;
 - historical documentation.
 
-## Approved domains
+## Approved Source Inventory
 
-[TO BE DEFINED]
+Do not treat an approved domain as sufficient evidence of source authority.
+
+Maintain a source inventory appropriate to the project.
+
+| Source ID | Source / boundary | Source class | Search eligible? | Ownership | Authority / applicability | Notes |
+|---|---|---|---|---|---|---|
+| | | | | | | |
+
+A source boundary may be:
+
+- an entire company-owned domain;
+- a path within a domain;
+- a documentation collection;
+- a repository;
+- a discussion collection;
+- an upstream standards site;
+- another explicitly identified resource.
+
+For multi-tenant platforms, define the relevant organization, repository,
+collection, path, or resource rather than approving the entire hosting domain.
+
+Distinguish:
+
+### Search eligibility
+
+May the retrieval system search or discover this source?
+
+### Source identity
+
+Can the application establish that retrieved material belongs to the intended
+source?
+
+### Ownership
+
+Does the company own the material?
+
+Hosting material does not automatically establish ownership.
+
+### Authority
+
+What types of claims may this source authoritatively establish?
+
+### Applicability
+
+Does the evidence apply to the product, version, lifecycle state, time period,
+or context in the user's question?
+
+### Entailment
+
+Does the actual evidence support the specific claim being made?
+
+These properties must not be collapsed into a single "approved source" flag.
 
 ## Restricted sources
 
@@ -420,6 +595,32 @@ Which subjects require current verification?
 When should answers contain citations?
 
 [TO BE DEFINED]
+
+## Retrieval Coverage Expectations
+
+For important source classes define:
+
+| Source class | Discovery method | Expected coverage | Fallback | Maintenance owner |
+|---|---|---|---|---|
+| | | | | |
+
+Discovery may use:
+
+- web search;
+- provider search;
+- curated catalogs;
+- APIs;
+- deterministic indexes;
+- direct known URLs;
+- other approved mechanisms.
+
+Discovery metadata is not automatically answer evidence.
+
+If a catalog, index, alias, or summary is used to locate a source, define how
+the application obtains the actual evidence used to substantiate the answer.
+
+Document known retrieval limitations rather than silently broadening source
+authority to compensate for poor discovery.
 
 ---
 
@@ -535,6 +736,37 @@ Remember:
 
 > Failure to find evidence is not automatically evidence of absence.
 
+## Evidence Provenance
+
+Define what evidence must be preserved or identifiable for grounding and
+evaluation.
+
+[TO BE DEFINED]
+
+Distinguish:
+
+- evidence available during answer generation;
+- evidence retrieved later for evaluation or human review.
+
+Later review evidence may help assess an answer, but must not automatically be
+represented as evidence that the original answer-generation process possessed.
+
+## Grounding Dimensions
+
+Where relevant, evaluate separately:
+
+- source identity;
+- authority;
+- ownership;
+- applicability;
+- lifecycle;
+- entailment;
+- citation association;
+- citation coverage.
+
+A valid citation association does not by itself prove that every claim in an
+answer is supported.
+
 ---
 
 # 12. Specialized Assistance
@@ -594,6 +826,30 @@ Examples:
 How much history should the assistant retain within the browser/session?
 
 [TO BE DEFINED]
+
+## Conversation State Semantics
+
+Define what constitutes a completed conversation turn.
+
+[TO BE DEFINED]
+
+Distinguish completed user/assistant turns from:
+
+- transient activity;
+- failed requests;
+- cancelled requests;
+- rejected drafts;
+- incomplete streamed output.
+
+Only state intentionally defined as conversation history should influence later
+turns.
+
+If conversation history is supplied by the browser, document what it can and
+cannot enforce.
+
+Browser-supplied history may support cumulative conversational intent, but it
+must not be treated as trustworthy persistent state for enforcing cross-session
+security, quota, or project limits.
 
 ## Persistent identity
 
@@ -747,20 +1003,74 @@ internal reasoning.
 
 [TO BE DEFINED]
 
+## Answer Delivery Model
+
+Choose the public answer-delivery contract.
+
+**Delivery model:**  
+[BUFFERED / STREAMING / HYBRID / TO BE DEFINED]
+
+Describe:
+
+[TO BE DEFINED]
+
+If the application promises validation before exposure, define which operations
+must complete before answer content becomes visible.
+
+Possible operations include:
+
+- grounding validation;
+- citation validation;
+- lifecycle validation;
+- disclosure validation;
+- bounded repair.
+
+Unvalidated draft content must not be exposed if doing so would violate the
+selected delivery guarantee.
+
+## Activity Delivery
+
+**Activity streaming:**  
+[YES / NO / TO BE DEFINED]
+
+If activity is shown, define approved user-visible states.
+
+[TO BE DEFINED]
+
+Activity must correspond to real application operations and must not expose
+hidden reasoning.
+
+## Repair and Failure Behavior
+
+**Repair allowed:** [YES / NO / TO BE DEFINED]
+
+**Maximum repair attempts:**  
+[TO BE DEFINED]
+
+**Failure behavior:**  
+[TO BE DEFINED]
+
+Define what the user sees if:
+
+- generation fails;
+- retrieval fails;
+- validation fails;
+- repair fails;
+- the request is cancelled.
+
 ---
 
 # 18. Request Admission and Cost Controls
 
+Input-size requirements are defined in §14.
+
+This section defines the operational controls used to enforce resource,
+capacity, abuse, and cost boundaries.
+
+Do not duplicate question/history limits here. Reference the canonical values
+from §14.
+
 Define:
-
-**Request body limit:**  
-[TO BE DEFINED]
-
-**Question limit:**  
-[TO BE DEFINED]
-
-**History limit:**  
-[TO BE DEFINED]
 
 **Per-client rate limit:**  
 [TO BE DEFINED]
@@ -948,11 +1258,23 @@ Maintain significant decisions here or in dedicated decision records.
 
 **Decision ID:** ASK-DEC-___
 
-**Date:**  
+**Status:**  
+[PROPOSED / APPROVED / SUPERSEDED]
+
+**Date proposed:**  
 [DATE]
+
+**Date approved:**  
+[DATE / NOT YET APPROVED]
+
+**Product owner / approver:**  
+[NAME / ROLE]
 
 **Issue:**  
 [DESCRIPTION]
+
+**Decision type:**  
+[CORPORATE POLICY / ENGINEERING / OPERATIONS / OTHER]
 
 **Alternatives considered:**
 
@@ -961,13 +1283,37 @@ Maintain significant decisions here or in dedicated decision records.
 3. [OPTION]
 
 **Decision:**  
-[PRODUCT-OWNER DECISION]
+[DECISION]
 
 **Rationale:**  
 [OPTIONAL]
 
 **Affected artifacts:**  
 [FILES / POLICIES / EVALUATIONS]
+
+**Supersedes:**  
+[DECISION ID / NONE]
+
+**Replaced by:**  
+[DECISION ID / NONE]
+
+**Required evaluation changes:**  
+[DESCRIPTION / NONE]
+
+**Required implementation changes:**  
+[DESCRIPTION / NONE]
+
+**Notes:**  
+[OPTIONAL]
+
+An AI recommendation is not an approved corporate-policy decision.
+
+Only decisions with the required approval status should be treated as current
+product policy.
+
+Do not delete superseded decisions merely because they are no longer active.
+Preserve enough history to understand why earlier implementation or evaluation
+results differed from current expectations.
 
 ---
 
@@ -984,22 +1330,61 @@ has already been decided.
 
 ---
 
-# 26. Current Project Stage
+# 26. Current Project State
+
+This section allows a new AI session or human contributor to determine where
+work should resume without reconstructing project history.
 
 **Current stage:**  
 [STAGE]
 
-**Completed stages:**  
+**Current bounded milestone:**  
+[DESCRIPTION]
+
+**Completed stages / milestones:**  
 [LIST]
 
 **Current completion gate:**  
 [DESCRIPTION]
 
-**Blocking decisions:**  
-[LIST]
+**Required gate evidence:**
+
+- [EVIDENCE]
+- [EVIDENCE]
+
+**Evidence currently available:**
+
+- [REFERENCE]
+- [REFERENCE]
+
+**Blocking decisions:**
+
+- [DECISION / NONE]
+
+**Known limitations:**
+
+- [LIMITATION / NONE]
+
+**Approval status:**  
+[NOT READY / READY FOR OWNER REVIEW / APPROVED TO ADVANCE]
+
+**Authorized next action:**  
+[DESCRIPTION]
+
+**Actions not yet authorized:**  
+[OPTIONAL]
 
 **Next recommended action:**  
 [DESCRIPTION]
 
-This section should be kept current so that a new AI session can quickly
-determine where development should resume.
+Passing tests does not automatically authorize advancement when the completion
+gate requires product-owner approval.
+
+Authorization to implement does not automatically authorize:
+
+- external API expenditure beyond approved experiments;
+- commit;
+- push;
+- deployment;
+- production configuration changes;
+- creation or modification of external resources.

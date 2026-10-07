@@ -345,6 +345,26 @@ Do not log verification tokens.
 Development bypasses, test keys, or test modes must not silently weaken
 production verification.
 
+## Verification Coverage
+
+Automated tests of verification logic do not establish that the real browser,
+public configuration, server configuration, credentials, and verification
+provider interoperate.
+
+Before declaring verification production-ready, perform a bounded real
+integration check in an appropriate environment.
+
+Distinguish:
+
+- configuration validation;
+- mocked verification tests;
+- real provider integration;
+- production-path verification.
+
+A readiness check may establish that required configuration is present and
+valid. It should not be described as proof that a real verification challenge
+will succeed.
+
 ---
 
 # 12. Rate Limiting
@@ -390,19 +410,44 @@ Prefer bounded concurrency over an unbounded server queue.
 
 Acquire scarce resources only after inexpensive validation succeeds.
 
-A conceptual sequence:
+A conceptual admission sequence may be:
 
     request received
         ↓
-    schema / size checks
+    cheap structural validation
         ↓
-    bot verification
+    inexpensive submission / abuse limiting
+        ↓
+    bot or human verification when required
         ↓
     paid-pipeline admission
         ↓
     policy classification
         ↓
     retrieval / generation
+
+This sequence is illustrative rather than universal.
+
+Different resources may require separate admission controls.
+
+For example:
+
+- verification work may have its own concurrency bound;
+- submission limiting may occur before verification;
+- model/retrieval capacity may be acquired only after verification;
+- authenticated applications may use trustworthy account identity rather than
+  anonymous-client controls.
+
+For each expensive or scarce resource document:
+
+- when capacity is acquired;
+- what identity or key controls admission;
+- what limit applies;
+- when capacity is released;
+- what happens if downstream work cannot be cancelled.
+
+The reusable requirement is to prevent inexpensive requests from creating
+unbounded expensive work, not to prescribe one universal ordering.
 
 Document exactly when a request begins consuming scarce capacity.
 
@@ -526,23 +571,105 @@ If repair is supported, bound the number of repair attempts.
 
 Avoid open-ended model self-correction loops.
 
+## Validation Before Exposure
+
+If the project promises that answers are validated before users see them,
+validation must occur before answer content becomes publicly visible.
+
+This requirement affects transport architecture.
+
+For a validation-before-exposure design:
+
+    generation
+        ↓
+    validation
+        ↓
+    optional bounded repair
+        ↓
+    final delivery
+
+Draft answer tokens that may later be rejected must not already have been
+streamed to the visitor.
+
+If repair is used:
+
+- bound the number of attempts;
+- preserve applicable privacy, disclosure, source, lifecycle, and assistance
+  policies;
+- share the remaining request deadline and resource budget;
+- avoid unnecessarily feeding rejected draft content back into repair when a
+  clean reconstruction from trusted inputs is safer.
+
+A project may intentionally choose direct answer streaming instead, but the
+Project Specification must record that decision and its validation
+consequences.
+
 ---
 
 # 21. Response Streaming
 
-If the application streams activity or answers, define the transport contract.
+If the application streams activity or answer content, define the transport
+and exposure contract explicitly.
 
-For activity streaming:
+## Activity Streaming
 
-- emit complete framed events;
-- tolerate network chunk boundaries;
-- do not assume one transport chunk equals one logical event;
-- distinguish activity from final answer;
-- handle cancellation and parse failures.
+Activity may be streamed independently from final answer content.
 
-Do not expose hidden reasoning or chain-of-thought as activity.
+Activity events should:
 
-Activity messages should represent user-understandable workflow states.
+- correspond to real application operations;
+- use user-understandable semantic states;
+- not expose hidden reasoning or chain-of-thought;
+- not become conversation history;
+- handle cancellation and failure cleanly.
+
+For framed streaming transports:
+
+- emit complete logical frames;
+- tolerate arbitrary network chunk boundaries;
+- do not assume one network chunk equals one logical event;
+- define malformed-frame behavior;
+- distinguish activity events from final-answer delivery.
+
+## Answer Streaming
+
+Determine whether answer content is:
+
+- buffered until validation completes;
+- streamed directly;
+- delivered through a hybrid mechanism.
+
+If validation-before-exposure is a project requirement, draft answer content
+must remain buffered until required validation and bounded repair complete.
+
+## Intermediary Verification
+
+Application-level streaming tests do not prove incremental delivery through
+the production serving path.
+
+Where streaming matters to the user experience, verify behavior through the
+relevant intermediaries, which may include:
+
+- reverse proxies;
+- load balancers;
+- CDNs;
+- compression;
+- response buffering;
+- caching.
+
+Test:
+
+- incremental event visibility;
+- event framing across arbitrary chunks;
+- fast responses;
+- slow responses;
+- cancellation;
+- malformed streams;
+- final-answer delivery;
+- intermediary buffering behavior.
+
+A successful local application stream is not sufficient evidence that the
+production path streams incrementally.
 
 ---
 
@@ -626,9 +753,10 @@ Verify retention operationally.
 
 ---
 
-# 26. Health and Readiness
+# 26. Health, Readiness, Integration and Serving-Path Verification
 
-Health and readiness answer different questions.
+These checks answer different questions and must not be treated as
+interchangeable.
 
 ## Health
 
@@ -636,19 +764,77 @@ Typically answers:
 
 > Is the application process alive?
 
-Health endpoints should be inexpensive and should not depend unnecessarily on
-external services.
+Health checks should be inexpensive and should not unnecessarily depend on
+paid or external services.
 
 ## Readiness
 
 Typically answers:
 
-> Is this instance correctly configured to serve application traffic?
+> Is this instance locally configured and able to accept the class of traffic
+> represented by the readiness contract?
 
-Readiness may verify important local configuration or dependencies.
+Readiness may verify:
 
-Do not expose secrets or excessive diagnostic information through either
-endpoint.
+- required configuration;
+- local resources;
+- required files;
+- local service dependencies;
+- configuration consistency.
+
+Readiness does not automatically prove:
+
+- external provider interoperability;
+- browser configuration;
+- public DNS;
+- CDN behavior;
+- reverse-proxy behavior;
+- static asset readability;
+- paid-pipeline success.
+
+## Integration Verification
+
+Answers questions such as:
+
+> Do selected real components interoperate correctly?
+
+Examples include:
+
+- browser + verification provider + server;
+- application + retrieval provider;
+- application + AI provider.
+
+Use bounded integration checks appropriate to the environment.
+
+## Serving-Path Verification
+
+Answers:
+
+> Can the deployed system actually serve users through the intended path?
+
+Depending on architecture this may include:
+
+    public edge
+        ↓
+    reverse proxy
+        ↓
+    static frontend / application
+        ↓
+    protected API
+
+Different checks may be required for:
+
+- static frontend delivery;
+- application health;
+- protected API routing;
+- streaming;
+- external dependencies;
+- paid-pipeline behavior.
+
+Do not describe one successful check as proving properties it does not test.
+
+Health, readiness, integration verification, public reachability, and
+successful paid-pipeline execution are separate operational signals.
 
 ---
 
@@ -955,7 +1141,18 @@ Before launch test:
 - logging exclusions;
 - static-file permissions;
 - health/readiness;
-- rollback.
+- rollback;
+- real verification-provider integration where applicable;
+- validation-before-exposure behavior;
+- incremental streaming through production intermediaries where applicable;
+- distinction between health, readiness, public reachability, and real
+  integration;
+
+For every important production validation, record what the check establishes
+and what it does not establish.
+
+Do not infer successful paid-pipeline behavior solely from health or readiness,
+or successful public serving solely from an application-process check.
 
 Use safe testing methods appropriate to the environment.
 

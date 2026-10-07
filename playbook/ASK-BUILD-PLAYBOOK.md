@@ -157,6 +157,45 @@ Where appropriate, evaluations should include:
 - adversarial cases; and
 - regression cases derived from previously discovered failures.
 
+## 2.10 Policy Dimensions Must Compose Explicitly
+
+Important behavioral policies should be modeled as independent dimensions when
+they answer different questions.
+
+Examples include:
+
+- topical scope;
+- private-information handling;
+- disclosure policy;
+- product lifecycle;
+- assistance complexity;
+- retrieval requirements.
+
+Do not overload one classification to represent several independent policy
+decisions.
+
+Before multiple behavioral policies are combined, define an explicit routing
+and precedence contract describing:
+
+- which decisions are independent;
+- which decisions may intercept processing;
+- which decisions may override ordinary routing;
+- which combinations select different answer modes;
+- which decisions are final before answer generation.
+
+For example, a private-information decision may intercept a request before
+ordinary scope handling, while a bounded technical-assistance decision may
+permit useful assistance even when the topic is not otherwise central to the
+company.
+
+These are project-specific decisions.
+
+Once trusted application routing has made a policy decision, the answer model
+should not silently reconsider or reverse that decision unless the architecture
+explicitly assigns that responsibility to the model.
+
+Evaluation should test both individual policy dimensions and their composition.
+
 ---
 
 # 3. Required Project Artifacts
@@ -224,6 +263,8 @@ A decision should record, at minimum:
 # 4. Development Workflow
 
 Corporate Ask should be developed incrementally.
+
+The stages below describe dependencies and qualification milestones. They are not intended to require a rigidly linear implementation schedule. Work may overlap when dependencies are satisfied, but a later stage must not silently bypass an unresolved earlier policy decision.
 
 Do not attempt to implement every capability during the first development
 stage.
@@ -404,6 +445,36 @@ Conversely, do not make false denials.
 
 Define approved public explanations.
 
+## Deterministic Versus Generated Disclosure Responses
+
+Not every semantically classified request needs a generated response.
+
+For disclosure decisions where the product owner requires tightly controlled
+public substance, consider:
+
+    semantic classification
+        ↓
+    deterministic approved response
+
+This can be preferable when generated prose could accidentally:
+
+- confirm something the company intentionally does not confirm;
+- deny something the company intentionally does not deny;
+- identify a protected provider, model, relationship, or implementation detail;
+- introduce unnecessary assertions beyond approved public facts.
+
+Deterministic interception does not make the semantic classifier infallible.
+The classification decision must still be evaluated.
+
+Use generated answers when variability, explanation, retrieved evidence, or
+question-specific reasoning provides meaningful value.
+
+The project specification should record which disclosure categories use:
+
+- deterministic responses;
+- generated responses; or
+- generated responses constrained by approved public facts.
+
 ### Completion Gate
 
 Common self-referential and implementation questions have approved behavioral
@@ -436,6 +507,55 @@ For each source class determine:
 - citation requirements;
 - reproduction/quotation rules; and
 - whether it may establish definitive claims.
+
+## Retrieval Capability Is Layered
+
+Do not treat "retrieval works" as a single property.
+
+Evaluate separately whether the system can:
+
+1. discover an appropriate source;
+2. acquire the actual source content;
+3. establish the source's identity;
+4. determine its authority for the claim;
+5. determine its current applicability;
+6. determine whether the evidence supports the claim; and
+7. deliver a valid citation associated with that evidence.
+
+Discovery metadata, catalogs, indexes, search snippets, aliases, or summaries
+may help locate evidence without themselves becoming evidence.
+
+Likewise, permission to search a domain does not automatically establish:
+
+- source ownership;
+- author authority;
+- first-party status;
+- current applicability; or
+- entitlement to substantiate a particular claim.
+
+## Retrieval Experiments
+
+When source retrieval is uncertain, perform a bounded experiment before
+building substantial retrieval infrastructure.
+
+Define:
+
+- representative queries;
+- expected sources;
+- discovery success;
+- acquisition success;
+- citation-delivery success;
+- call/time/cost budget;
+- stopping criteria.
+
+Diagnose the failing layer before repeatedly tuning prompts or search queries.
+
+If discovery is unreliable but the source set is valuable and reasonably
+bounded, consider a different discovery mechanism rather than weakening source
+authority rules.
+
+The product owner should decide whether the expected source coverage justifies
+additional retrieval infrastructure.
 
 ### Completion Gate
 
@@ -484,6 +604,60 @@ Failure to find something is not automatically proof that it does not exist.
 
 Citations should support the claim being made rather than merely point to a
 related page.
+
+## Evidence Provenance
+
+Grounding evidence should retain enough provenance to establish what evidence
+was actually available for the operation being evaluated.
+
+Evidence retrieved later during review may help assess an answer, but it must
+not automatically be represented as evidence that was available during the
+original generation.
+
+Where evaluation uses source quotations or extracted evidence:
+
+- verify quoted text against the captured source where practical;
+- preserve explicit UNKNOWN or UNVERIFIABLE states;
+- do not allow a plausible evaluator explanation to substitute for evidence;
+- distinguish source authority from claim entailment;
+- distinguish source applicability from claim entailment;
+- distinguish citation presence from citation coverage.
+
+A model-based evaluator can itself hallucinate.
+
+Its conclusions should therefore be treated as evaluated evidence rather than
+as an infallible ground truth.
+
+## Validation and Repair
+
+If answers are validated before delivery, define the repair contract explicitly.
+
+Repair should be:
+
+- bounded;
+- subject to the remaining request deadline and resource budget;
+- governed by the same privacy, disclosure, source, and lifecycle policies;
+- based on trusted inputs rather than unnecessarily reinforcing rejected draft
+  content.
+
+Do not create open-ended generate-review-repair loops.
+
+## Answer Delivery Contract
+
+Before implementing answer streaming, decide whether the application promises
+validation before the user sees an answer.
+
+Possible delivery models include:
+
+- buffered final delivery;
+- direct answer streaming;
+- hybrid delivery.
+
+If the project guarantees validation-before-exposure, unvalidated draft answer
+content must not be streamed to the user.
+
+The application may still stream truthful activity information while the final
+answer is being generated and validated.
 
 ### Completion Gate
 
@@ -586,6 +760,41 @@ Consider:
 
 Prefer rejecting invalid or abusive work before expensive processing begins.
 
+## Protect Paid Prototypes Early
+
+Stage 11 is the formal request-admission hardening milestone, but basic resource
+bounds should exist before any paid prototype is exposed to untrusted users.
+
+At minimum consider early bounds on:
+
+- request size;
+- question size;
+- request deadline;
+- concurrency;
+- model output;
+- aggregate spend.
+
+Later stages may refine these controls.
+
+## Real Integration Verification
+
+Mocked and injected tests establish important contracts but do not prove that
+the real browser, application configuration, verification service, credentials,
+and external dependencies interoperate.
+
+Before declaring admission controls complete, perform at least one bounded
+real-path integration check in an appropriate non-production environment.
+
+Distinguish:
+
+- configuration readiness;
+- mocked contract verification;
+- real external integration;
+- operational health.
+
+A readiness endpoint should not be treated as proof that an external
+verification flow actually works.
+
 ### Completion Gate
 
 Resource controls have automated tests and cannot be trivially bypassed
@@ -611,6 +820,24 @@ Expose semantic activity, not internal architecture.
 Do not expose chain-of-thought or protected internal reasoning.
 
 Accessibility and reduced-motion behavior should be considered.
+
+## Delivery Semantics
+
+The user experience must conform to the answer-delivery contract established
+during grounding and validation design.
+
+If final answers are buffered for validation:
+
+- activity may be streamed;
+- rejected drafts must never become visible;
+- transient activity is not conversation history;
+- failures and cancellations must not create completed conversation turns.
+
+Activity indicators should correspond to real application operations rather
+than fabricated progress.
+
+Where streaming crosses proxies, CDNs, compression, or caching layers, verify
+incremental delivery through the actual serving path.
 
 ### Completion Gate
 
@@ -765,30 +992,192 @@ product policy.
 
 # 22. AI Operating Procedure
 
-When an AI is asked to begin a new Corporate Ask project using this playbook,
-it should:
+This section defines how an AI should bootstrap, resume, and advance a
+Corporate Ask project.
 
-1. Read this playbook.
-2. Read the project's existing Corporate Ask specification and decision
-   records, if any.
-3. Determine the current development stage.
-4. Identify missing decisions required for that stage.
-5. Ask the product owner only for decisions that cannot responsibly be
-   inferred.
-6. Recommend approaches and explain important tradeoffs.
-7. Record approved decisions in project artifacts.
-8. Implement only the approved stage.
-9. Create or update evaluations for behavioral changes.
-10. Run relevant focused tests before the complete regression suite.
-11. Report results and unresolved issues.
-12. Present the completion gate to the product owner.
-13. Do not silently advance through unresolved product-policy decisions.
+## 22.1 Bootstrap in a New Repository
 
-The AI should preserve working behavior from completed stages unless a later
-approved decision intentionally changes it.
+When asked to begin a new Corporate Ask project:
 
-When such a decision changes earlier behavior, update the affected policy,
-evaluations, documentation, and regression tests together.
+1. Read `ASK-BUILD-PLAYBOOK.md`.
+2. Read all companion Corporate Ask standards and templates applicable to the
+   project.
+3. Inspect the repository before assuming it is empty.
+4. Create or locate the project's Corporate Ask Project Specification.
+5. Create or locate its decision records, open-question state, and evaluation
+   artifacts.
+6. Determine the current development stage.
+7. Identify unresolved decisions required for that stage.
+8. Propose one bounded next milestone.
+9. Define the evidence required to complete that milestone.
+10. Obtain product-owner decisions for unresolved corporate policy before
+    encoding them.
+
+Do not begin by generating the complete application.
+
+## 22.2 Resuming an Existing Project
+
+When resuming work:
+
+1. Read the current project specification.
+2. Read approved and superseding decision records relevant to the current
+   stage.
+3. Inspect repository state and existing implementation.
+4. Review the current stage, completion gate, known limitations, and open
+   questions.
+5. Determine whether later decisions supersede earlier requirements or tests.
+6. Identify the next authorized action.
+
+Do not assume that an older evaluation expectation remains valid after a later
+product-owner decision supersedes the underlying policy.
+
+## 22.3 Distinguish Decision Types
+
+The AI should distinguish among:
+
+### Corporate Policy Decisions
+
+Require product-owner authority.
+
+Examples:
+
+- public positioning;
+- privacy boundaries;
+- disclosure;
+- source authority;
+- lifecycle recommendations;
+- reproduction authorization;
+- acceptable assistance boundaries;
+- retention policy;
+- product acceptance.
+
+### Engineering Decisions
+
+The AI may recommend and, when implementation has been authorized, make
+ordinary engineering choices consistent with approved requirements.
+
+Examples:
+
+- internal function decomposition;
+- test organization;
+- safe parsing strategy;
+- implementation details that do not change product policy.
+
+### Engineering Requirements
+
+Some properties follow from the approved architecture and are not optional
+branding or policy choices.
+
+Examples:
+
+- secrets must not be shipped in public browser bundles;
+- untrusted headers must not silently become trusted identity;
+- malformed inputs must not bypass validated request contracts.
+
+When uncertain whether a decision changes corporate policy, ask the product
+owner.
+
+## 22.4 Authorization Boundaries
+
+Authorization to perform one action does not imply authorization for another.
+
+Distinguish permission to:
+
+- investigate;
+- recommend;
+- modify files;
+- run tests;
+- perform live external evaluations;
+- incur external API cost;
+- commit;
+- push;
+- deploy;
+- modify production configuration;
+- create or change external resources.
+
+Do not infer deployment or external-resource authorization merely because an
+implementation or test suite passes.
+
+## 22.5 Stage Execution
+
+For the current bounded milestone:
+
+1. record relevant approved decisions;
+2. implement only the authorized work;
+3. create or update evaluations for behavioral changes;
+4. run focused tests;
+5. diagnose failures at the layer where they occur;
+6. run adjacent-policy tests;
+7. run the complete regression suite when appropriate;
+8. perform bounded live/integration checks when required;
+9. report what each test establishes and what it does not establish;
+10. record remaining limitations.
+
+Do not repeatedly tune prompts when evidence indicates the failure belongs to
+retrieval, transport, configuration, policy routing, deployment, or another
+layer.
+
+## 22.6 Completion Gates
+
+A stage or milestone is complete only when its required evidence exists.
+
+Evidence may include:
+
+- approved product-owner decisions;
+- deterministic test results;
+- semantic evaluation results;
+- product-owner answer review;
+- integration verification;
+- production-path verification;
+- known limitations.
+
+Passing tests does not by itself constitute product-owner approval when the
+gate includes product judgment.
+
+Record:
+
+- completion evidence;
+- unresolved limitations;
+- approval status;
+- authorized next action.
+
+## 22.7 Superseding Decisions
+
+A later approved decision may intentionally replace an earlier decision.
+
+When this occurs:
+
+1. preserve the historical decision where appropriate;
+2. mark it superseded rather than silently rewriting history;
+3. identify the replacing decision;
+4. update current policy;
+5. update affected evaluations;
+6. update implementation when authorized;
+7. remove obsolete expectations from active regression criteria.
+
+Historical evaluation results should remain identifiable as results against
+the policy that existed when they were produced.
+
+## 22.8 Bounded Experiments
+
+Live model, retrieval, or external-service experiments should have:
+
+- a stated question being investigated;
+- representative test cases;
+- call/time/cost bounds;
+- stopping criteria;
+- expected evidence.
+
+Do not continue spending on repeated variations merely because the desired
+result has not appeared.
+
+At the end of an experiment, determine whether to:
+
+- refine;
+- change architecture;
+- accept the limitation;
+- defer the capability; or
+- obtain a product-owner decision.
 
 ---
 
